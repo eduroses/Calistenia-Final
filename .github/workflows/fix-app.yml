@@ -1,0 +1,88 @@
+name: Fix Calistenia app
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[cal-app-fix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch app and verify assets
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          index = root / 'index.html'
+          text = index.read_text(encoding='utf-8')
+
+          # Fix image URLs to the actual repository root.
+          text = text.replace('./assets/exercises/', './')
+          text = text.replace('/assets/exercises/', '/')
+
+          # Remove the caption that the user does not want.
+          text = re.sub(r'<div class="pdf-caption">.*?</div>', '', text, flags=re.S)
+
+          # Keep the original image quality; do not apply pixelated rendering.
+          text = text.replace('.pdf-visual img{height:auto;max-height:68vh;object-fit:contain}', '.pdf-visual img{height:auto;max-height:78vh;object-fit:contain;image-rendering:auto}')
+
+          # Add a reliable audio layer after the original application code.
+          marker = '<!-- CALISTENIA AUDIO FIX V12 -->'
+          if marker not in text:
+              patch = r'''\n<!-- CALISTENIA AUDIO FIX V12 -->\n<script>\n(()=>{\n  let audioReady=false;\n  function arm(){\n    try{\n      if(typeof ensureAudio==='function') ensureAudio();\n      if(typeof audioCtx!=='undefined' && audioCtx && audioCtx.state==='suspended') audioCtx.resume();\n      audioReady=true;\n    }catch(e){}\n  }\n  function clickTone(){try{if(typeof beep==='function'){arm();beep(660,.07,.045,'sine')}}catch(e){}}\n  document.addEventListener('pointerdown',arm,{passive:true});\n  document.addEventListener('touchstart',arm,{passive:true});\n\n  window.toggleSound=window.toggleSound=function(){\n    try{\n      soundEnabled=!soundEnabled;\n      localStorage.setItem('cal_sound',soundEnabled?'on':'off');\n      if(soundEnabled){arm();clickTone();}\n      if(typeof renderSoundButton==='function') renderSoundButton();\n    }catch(e){}\n  };\n\n  document.addEventListener('click',e=>{\n    const b=e.target && e.target.closest ? e.target.closest('#soundToggle') : null;\n    if(!b) return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    window.toggleSound();\n  },true);\n\n  window.startTimer=function(sec){\n    timerLeft=Math.max(1,Math.round(sec));\n    timerTotal=timerLeft;\n    timerRunning=true;\n    clearInterval(timer);\n    arm();\n    updateTimerUI();\n    timer=setInterval(()=>{\n      timerLeft--;\n      updateTimerUI();\n      if(timerLeft>0 && soundEnabled){\n        try{ if(timerLeft<=3) beep(1080,.10,.05,'square'); else beep(720,.045,.028,'sine'); }catch(e){}\n      }\n      if(timerLeft<=0){\n        clearInterval(timer); timer=null; timerRunning=false;\n        try{ if(soundEnabled) finishSound(); }catch(e){}\n        if(navigator.vibrate) navigator.vibrate([180,80,180]);\n        toast('¡Tiempo cumplido!');\n        updateTimerUI();\n      }\n    },1000);\n  };\n\n  window.startRest=function(sec){\n    restLeft=Math.max(1,Math.round(sec));\n    restTotal=restLeft;\n    showRest();\n    clearInterval(restTimer);\n    arm();\n    restTimer=setInterval(()=>{\n      restLeft--;\n      updateRestUI();\n      if(restLeft>0 && soundEnabled){\n        try{ if(restLeft<=3) beep(1080,.10,.05,'square'); else beep(600,.045,.025,'sine'); }catch(e){}\n      }\n      if(restLeft<=0){\n        clearInterval(restTimer); restTimer=null;\n        try{ if(soundEnabled) finishSound(); }catch(e){}\n        if(navigator.vibrate) navigator.vibrate([180,80,180]);\n        toast('Descanso terminado · siguiente serie');\n      }\n    },1000);\n    updateRestUI();\n  };\n\n  if(typeof renderSoundButton==='function') renderSoundButton();\n})();\n</script>\n'''
+              text = text.replace('</body>', patch + '</body>')
+
+          index.write_text(text, encoding='utf-8')
+
+          # Put copies of the original PDF-derived images at the exact path
+          # expected by any older cached build too.
+          names = [
+            'flexiones-de-pecho.jpg','sentadillas.jpg','remo-invertido.jpg',
+            'fondos-en-silla.jpg','plancha.jpg','superman.jpg',
+            'mountain-climbers.jpg','burpees.jpg','plancha-lateral.jpg',
+            'abdominal-bicicleta.jpg','referencia-general.jpg'
+          ]
+          asset_dir = root/'assets'/'exercises'
+          asset_dir.mkdir(parents=True, exist_ok=True)
+          missing=[]
+          for n in names:
+              src=root/n
+              dst=asset_dir/n
+              if src.exists():
+                  dst.write_bytes(src.read_bytes())
+              else:
+                  missing.append(n)
+          if missing:
+              raise SystemExit('Missing expected image files: '+', '.join(missing))
+
+          # Static checks before commit.
+          assert './assets/exercises/' not in text
+          assert 'pdf-caption' not in text or '<style' in text
+          assert marker in text
+          for n in names:
+              assert (asset_dir/n).exists() and (asset_dir/n).stat().st_size > 1000
+          print('STATIC CHECKS PASSED')
+          print('Images:', ', '.join(names))
+          print('Audio patch present:', marker in text)
+
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          git config user.name 'calistenia-app-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html assets/exercises
+          if git diff --cached --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git commit -m '[cal-app-fix] verified images and timer audio'
+          git push
