@@ -1,0 +1,11 @@
+{
+  "name":"Calistenia Militar · 8 semanas",
+  "short_name":"Calistenia 8W",
+  "start_url":"./index.html",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#080b0a",
+  "theme_color":"#101512",
+  "lang":"es",
+  "description":"Aplicación web offline para seguir y registrar el programa de calistenia militar de 8 semanas."
+}

@@ -1,0 +1,21 @@
+CALISTENIA MILITAR - VERSION FINAL 3
+
+Esta versión incluye:
+- sonido por pulsación del temporizador y señal al llegar a 0;
+- control de sonido ON/OFF;
+- ilustraciones visuales integradas en las fichas de ejercicios;
+- menú inferior desplazable y adaptado a móviles;
+- actualización reforzada del Service Worker;
+- funcionamiento PWA/offline y conservación de datos mediante localStorage.
+
+Para actualizar una instalación existente publicada en GitHub Pages:
+1. Reemplazar index.html, sw.js y manifest.webmanifest en el repositorio.
+2. Esperar a que GitHub Pages termine el despliegue.
+3. Abrir la dirección de la app en Chrome y recargar.
+4. Si el icono instalado todavía muestra la versión anterior, cerrar completamente la app, abrirla desde Chrome una vez, recargar y volver a abrir desde el icono.
+
+No requiere pagos ni una tienda de aplicaciones.
+
+
+ACTUALIZACION V4 — LAS LAMINAS DE EJERCICIOS SON LAS DEL PDF ORIGINAL
+Esta version incorpora como imagenes las laminas originales renderizadas directamente desde Manual_Calistenia_Militar_8_Semanas_COMPLETO.pdf. No se usan dibujos generados para sustituirlas. Para las variantes que no tienen una lamina individual en el PDF, se muestra la lamina general original del manual y se indica esa limitacion.
