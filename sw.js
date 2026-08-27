@@ -1,113 +1,45 @@
-const CACHE='calistenia-militar-final-v10';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./flexiones-de-pecho.jpg','./sentadillas.jpg','./remo-invertido.jpg','./fondos-en-silla.jpg','./plancha.jpg','./superman.jpg','./mountain-climbers.jpg','./burpees.jpg','./plancha-lateral.jpg','./abdominal-bicicleta.jpg','./referencia-general.jpg'];
+const CACHE='calistenia-militar-final-v11';
+const CORE=['./','./index.html','./manifest.webmanifest','./flexiones-de-pecho.jpg','./sentadillas.jpg','./remo-invertido.jpg','./fondos-en-silla.jpg','./plancha.jpg','./superman.jpg','./mountain-climbers.jpg','./burpees.jpg','./plancha-lateral.jpg','./abdominal-bicicleta.jpg','./referencia-general.jpg'];
 
-const PATCH = `<script id="calistenia-v10-patch">
-(()=>{
-  'use strict';
-  let audioCtx=null;
-  let lastTimerValue=null;
-  let zeroPlayed=false;
-  function soundOn(){return localStorage.getItem('cal_sound')!=='off';}
-  function unlockAudio(){
-    try{
-      audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
-      if(audioCtx.state==='suspended')audioCtx.resume();
-    }catch(e){}
-  }
-  function tone(freq,duration=.055,gain=.035,type='sine'){
-    if(!soundOn())return;
-    try{
-      unlockAudio();
-      if(!audioCtx||audioCtx.state==='suspended')return;
-      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-      o.type=type;o.frequency.setValueAtTime(freq,audioCtx.currentTime);
-      g.gain.setValueAtTime(.0001,audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(gain,audioCtx.currentTime+.008);
-      g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration);
-      o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+duration+.015);
-    }catch(e){}
-  }
-  function finishTone(){tone(880,.12,.055,'sine');setTimeout(()=>tone(1175,.18,.055,'sine'),140);}
+const PATCH = `<style id="cal-v11-style">.pdf-caption{display:none!important}.exercise-visual img{image-rendering:auto!important}</style><script id="cal-v11-patch">(()=>{
+'use strict';
+let ctx=null,last=null,finished=false;
+const enabled=()=>localStorage.getItem('cal_sound')!=='off';
+function unlock(){try{ctx=ctx||new(window.AudioContext||window.webkitAudioContext)();if(ctx.state==='suspended')ctx.resume();}catch(e){}}
+function tone(f=720,d=.045,g=.028,type='sine'){if(!enabled())return;try{unlock();if(!ctx)return;const o=ctx.createOscillator(),a=ctx.createGain();o.type=type;o.frequency.value=f;a.gain.setValueAtTime(.0001,ctx.currentTime);a.gain.exponentialRampToValueAtTime(g,ctx.currentTime+.006);a.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+d);o.connect(a);a.connect(ctx.destination);o.start();o.stop(ctx.currentTime+d+.01);}catch(e){}}
+function finish(){tone(880,.12,.06,'sine');setTimeout(()=>tone(1175,.18,.06,'sine'),130)}
+function sync(){const b=document.getElementById('soundToggle');if(b)b.textContent=enabled()?'🔊 Sonido ON':'🔇 Sonido OFF'}
+document.addEventListener('pointerdown',unlock,{passive:true});
+document.addEventListener('touchstart',unlock,{passive:true});
+document.addEventListener('click',e=>{const b=e.target?.closest?.('#soundToggle');if(!b)return;setTimeout(()=>{sync();if(enabled()){unlock();tone(660,.07,.045)}},30)},true);
+function timerSound(){const el=document.getElementById('timerClock');if(!el)return;const v=el.textContent.trim();if(v===last)return;last=v;const m=v.match(/^(\\d+):([0-5]\\d)$/);if(!m)return;const n=Number(m[1])*60+Number(m[2]);const btn=document.getElementById('timerBtn');const running=!!btn&&btn.textContent.includes('Pausar');if(n===0){if(!finished){finished=true;finish();if(navigator.vibrate)navigator.vibrate([180,80,180])}return}finished=false;if(running){if(n<=3)tone(1100,.09,.05,'square');else tone(760,.045,.025,'sine')}}
+function fix(){document.querySelectorAll('img[src*="/assets/exercises/"]').forEach(img=>{const u=new URL(img.getAttribute('src'),location.href);const marker='/assets/exercises/';const i=u.pathname.indexOf(marker);if(i>=0){u.pathname=u.pathname.slice(0,i+1)+u.pathname.slice(i+marker.length);img.src=u.pathname+u.search+u.hash;}});document.querySelectorAll('.pdf-caption').forEach(x=>x.remove());sync();timerSound()}
+new MutationObserver(fix).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+setInterval(fix,250);fix();
+})();</script>`;
 
-  // Unlock audio only; do not play a sound for ordinary taps.
-  document.addEventListener('pointerdown',unlockAudio,{passive:true});
-  document.addEventListener('touchstart',unlockAudio,{passive:true});
-
-  function syncSoundButton(){
-    const b=document.getElementById('soundToggle');
-    if(b)b.textContent=soundOn()?'🔊 Sonido ON':'🔇 Sonido OFF';
-  }
-  document.addEventListener('click',e=>{
-    const b=e.target&&e.target.closest?e.target.closest('#soundToggle'):null;
-    if(b){
-      setTimeout(()=>{syncSoundButton();if(soundOn()){unlockAudio();tone(660,.07,.04);}},20);
-    }
-  },true);
-
-  // The original app's timer is kept intact. We monitor its visible value and
-  // add one tick per second plus a distinct completion signal.
-  function checkTimer(){
-    const el=document.getElementById('timerClock');
-    if(!el)return;
-    const value=el.textContent.trim();
-    if(value===lastTimerValue)return;
-    const previous=lastTimerValue;
-    lastTimerValue=value;
-    const match=value.match(/^(\\d+):([0-5]\\d)$/);
-    if(!match)return;
-    const total=Number(match[1])*60+Number(match[2]);
-    const button=document.getElementById('timerBtn');
-    const running=button&&button.textContent.includes('Pausar');
-    if(total===0){
-      if(!zeroPlayed&&(running||previous!==null)){
-        zeroPlayed=true;finishTone();
-        if(navigator.vibrate)navigator.vibrate([180,80,180]);
-      }
-      return;
-    }
-    zeroPlayed=false;
-    if(running){
-      if(total<=3)tone(1040,.09,.05,'square');
-      else tone(720,.04,.028,'sine');
-    }
-  }
-
-  function cleanCaptions(){document.querySelectorAll('.pdf-caption').forEach(el=>el.remove());}
-  function fixImages(){
-    document.querySelectorAll('img[src*="/assets/exercises/"]').forEach(img=>{
-      const marker='/assets/exercises/';
-      const idx=img.src.indexOf(marker);
-      if(idx>=0)img.src=img.src.substring(0,idx+1)+img.src.substring(idx+marker.length);
-    });
-  }
-  function run(){cleanCaptions();fixImages();syncSoundButton();checkTimer();}
-  new MutationObserver(run).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
-  setInterval(run,100);
-  run();
-})();
-</script>`;
-
-async function patchHtml(response){
-  const type=response.headers.get('content-type')||'';
-  if(!type.includes('text/html'))return response;
-  try{
-    const text=await response.text();
-    if(text.includes('calistenia-v10-patch'))return new Response(text,{status:response.status,statusText:response.statusText,headers:response.headers});
-    const patched=text.replaceAll('./assets/exercises/','./').replace(/<div class="pdf-caption">[\\s\\S]*?<\\/div>/g,'').replace(/<script>if\("serviceWorker" in navigator[\\s\S]*?<\\/script>/,'').replace('</body>',PATCH+'</body>');
-    return new Response(patched,{status:response.status,statusText:response.statusText,headers:response.headers});
-  }catch(e){return response;}
+async function patch(response){
+ const type=response.headers.get('content-type')||'';
+ if(!type.includes('text/html'))return response;
+ try{
+  let text=await response.text();
+  text=text.replaceAll('./assets/exercises/','./');
+  text=text.replace(/<div class="pdf-caption">[\\s\\S]*?<\\/div>/g,'');
+  if(!text.includes('cal-v11-patch'))text=text.replace('</body>',PATCH+'</body>');
+  return new Response(text,{status:response.status,statusText:response.statusText,headers:response.headers});
+ }catch(e){return response}
 }
 
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  const url=new URL(event.request.url);
-  if(url.pathname.includes('/assets/exercises/')){
-    const filename=url.pathname.split('/assets/exercises/').pop();
-    const fixed=new URL(url.href);fixed.pathname=url.pathname.substring(0,url.pathname.indexOf('/assets/exercises/'))+'/'+filename;
-    event.respondWith(fetch(fixed).catch(()=>caches.match(fixed).then(r=>r||caches.match(event.request))));
-    return;
-  }
-  event.respondWith(fetch(event.request).then(r=>patchHtml(r)).catch(()=>caches.match(event.request).then(r=>r||caches.match('./index.html'))));
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{
+ if(e.request.method!=='GET')return;
+ const url=new URL(e.request.url);
+ if(url.pathname.endsWith('/sw.js')){e.respondWith(fetch(e.request,{cache:'no-store'}));return}
+ if(url.pathname.includes('/assets/exercises/')){
+  const marker='/assets/exercises/';const i=url.pathname.indexOf(marker);const fixed=new URL(url.href);fixed.pathname=url.pathname.slice(0,i+1)+url.pathname.slice(i+marker.length);
+  e.respondWith(fetch(fixed,{cache:'no-store'}).catch(()=>caches.match(fixed)));
+  return;
+ }
+ e.respondWith(fetch(e.request,{cache:'no-store'}).then(patch).then(r=>{if(new URL(e.request.url).pathname.endsWith('/index.html')||new URL(e.request.url).pathname.endsWith('/')){const c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));}return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('./index.html'))));
 });
