@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Patch app and verify assets
+      - name: Patch app and verify assets/audio
         shell: python
         run: |
           from pathlib import Path
@@ -25,26 +25,58 @@ jobs:
           index = root / 'index.html'
           text = index.read_text(encoding='utf-8')
 
-          # Fix image URLs to the actual repository root.
+          # Correct all image URLs to the repository root.
           text = text.replace('./assets/exercises/', './')
           text = text.replace('/assets/exercises/', '/')
 
-          # Remove the caption that the user does not want.
+          # Remove the caption the user does not want.
           text = re.sub(r'<div class="pdf-caption">.*?</div>', '', text, flags=re.S)
 
-          # Keep the original image quality; do not apply pixelated rendering.
-          text = text.replace('.pdf-visual img{height:auto;max-height:68vh;object-fit:contain}', '.pdf-visual img{height:auto;max-height:78vh;object-fit:contain;image-rendering:auto}')
+          # Keep the original image quality.
+          text = text.replace(
+              '.pdf-visual img{height:auto;max-height:68vh;object-fit:contain}',
+              '.pdf-visual img{height:auto;max-height:78vh;object-fit:contain;image-rendering:auto}'
+          )
 
-          # Add a reliable audio layer after the original application code.
-          marker = '<!-- CALISTENIA AUDIO FIX V12 -->'
-          if marker not in text:
-              patch = r'''\n<!-- CALISTENIA AUDIO FIX V12 -->\n<script>\n(()=>{\n  let audioReady=false;\n  function arm(){\n    try{\n      if(typeof ensureAudio==='function') ensureAudio();\n      if(typeof audioCtx!=='undefined' && audioCtx && audioCtx.state==='suspended') audioCtx.resume();\n      audioReady=true;\n    }catch(e){}\n  }\n  function clickTone(){try{if(typeof beep==='function'){arm();beep(660,.07,.045,'sine')}}catch(e){}}\n  document.addEventListener('pointerdown',arm,{passive:true});\n  document.addEventListener('touchstart',arm,{passive:true});\n\n  window.toggleSound=window.toggleSound=function(){\n    try{\n      soundEnabled=!soundEnabled;\n      localStorage.setItem('cal_sound',soundEnabled?'on':'off');\n      if(soundEnabled){arm();clickTone();}\n      if(typeof renderSoundButton==='function') renderSoundButton();\n    }catch(e){}\n  };\n\n  document.addEventListener('click',e=>{\n    const b=e.target && e.target.closest ? e.target.closest('#soundToggle') : null;\n    if(!b) return;\n    e.preventDefault();\n    e.stopImmediatePropagation();\n    window.toggleSound();\n  },true);\n\n  window.startTimer=function(sec){\n    timerLeft=Math.max(1,Math.round(sec));\n    timerTotal=timerLeft;\n    timerRunning=true;\n    clearInterval(timer);\n    arm();\n    updateTimerUI();\n    timer=setInterval(()=>{\n      timerLeft--;\n      updateTimerUI();\n      if(timerLeft>0 && soundEnabled){\n        try{ if(timerLeft<=3) beep(1080,.10,.05,'square'); else beep(720,.045,.028,'sine'); }catch(e){}\n      }\n      if(timerLeft<=0){\n        clearInterval(timer); timer=null; timerRunning=false;\n        try{ if(soundEnabled) finishSound(); }catch(e){}\n        if(navigator.vibrate) navigator.vibrate([180,80,180]);\n        toast('¡Tiempo cumplido!');\n        updateTimerUI();\n      }\n    },1000);\n  };\n\n  window.startRest=function(sec){\n    restLeft=Math.max(1,Math.round(sec));\n    restTotal=restLeft;\n    showRest();\n    clearInterval(restTimer);\n    arm();\n    restTimer=setInterval(()=>{\n      restLeft--;\n      updateRestUI();\n      if(restLeft>0 && soundEnabled){\n        try{ if(restLeft<=3) beep(1080,.10,.05,'square'); else beep(600,.045,.025,'sine'); }catch(e){}\n      }\n      if(restLeft<=0){\n        clearInterval(restTimer); restTimer=null;\n        try{ if(soundEnabled) finishSound(); }catch(e){}\n        if(navigator.vibrate) navigator.vibrate([180,80,180]);\n        toast('Descanso terminado · siguiente serie');\n      }\n    },1000);\n    updateRestUI();\n  };\n\n  if(typeof renderSoundButton==='function') renderSoundButton();\n})();\n</script>\n'''
-              text = text.replace('</body>', patch + '</body>')
+          # Remove the previous broken audio patch completely. It used window.startTimer,
+          # which cannot replace the lexical startTimer used by bindWorkout().
+          text = re.sub(r'\\n?<!-- CALISTENIA AUDIO FIX V12 -->.*?</script>\\n?</body>', '\\n</body>', text, flags=re.S)
+          text = re.sub(r'<!-- CALISTENIA AUDIO FIX V12 -->.*?</script>\\s*</body>', '</body>', text, flags=re.S)
+
+          # Replace the real lexical timer function used by bindWorkout().
+          old_timer = r'''function startTimer(sec){timerLeft=Math.max(1,Math.round(sec));timerTotal=timerLeft;timerRunning=true;clearInterval(timer);timer=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft<=0){stopTimer();toast('¡Tiempo cumplido!');if(navigator.vibrate)navigator.vibrate([180,80,180])}},1000);updateTimerUI()}'''
+          new_timer = r'''function startTimer(sec){ensureAudio();timerLeft=Math.max(1,Math.round(sec));timerTotal=timerLeft;timerRunning=true;clearInterval(timer);beep(timerLeft<=3?1080:720,.06,.035,timerLeft<=3?'square':'sine');timer=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft>0&&soundEnabled){beep(timerLeft<=3?1080:720,timerLeft<=3?.10:.045,timerLeft<=3?.055:.028,timerLeft<=3?'square':'sine')}if(timerLeft<=0){clearInterval(timer);timer=null;timerRunning=false;if(soundEnabled)finishSound();if(navigator.vibrate)navigator.vibrate([180,80,180]);toast('¡Tiempo cumplido!');updateTimerUI()}},1000);updateTimerUI()}'''
+          if old_timer not in text:
+              raise SystemExit('Expected original startTimer function was not found; refusing unsafe patch.')
+          text = text.replace(old_timer, new_timer, 1)
+
+          # Replace the real lexical rest timer too.
+          old_rest = r'''function startRest(sec){restLeft=Math.max(1,Math.round(sec));restTotal=restLeft;showRest();clearInterval(restTimer);restTimer=setInterval(()=>{restLeft--;updateRestUI();if(restLeft<=0){clearInterval(restTimer);restTimer=null;toast('Descanso terminado · siguiente serie');if(navigator.vibrate)navigator.vibrate([180,80,180])}},1000);updateRestUI()}'''
+          new_rest = r'''function startRest(sec){ensureAudio();restLeft=Math.max(1,Math.round(sec));restTotal=restLeft;showRest();clearInterval(restTimer);beep(restLeft<=3?1080:600,.06,.03,restLeft<=3?'square':'sine');restTimer=setInterval(()=>{restLeft--;updateRestUI();if(restLeft>0&&soundEnabled){beep(restLeft<=3?1080:600,restLeft<=3?.10:.045,restLeft<=3?.055:.025,restLeft<=3?'square':'sine')}if(restLeft<=0){clearInterval(restTimer);restTimer=null;if(soundEnabled)finishSound();if(navigator.vibrate)navigator.vibrate([180,80,180]);toast('Descanso terminado · siguiente serie')}},1000);updateRestUI()}'''
+          if old_rest not in text:
+              raise SystemExit('Expected original startRest function was not found; refusing unsafe patch.')
+          text = text.replace(old_rest, new_rest, 1)
+
+          # Wire the dynamically-created sound button at the moment the workout UI exists.
+          needle = "document.getElementById('techBtn').onclick=()=>openExercise(ex[0]);"
+          replacement = needle + "document.getElementById('soundToggle').onclick=()=>toggleSound();"
+          if needle not in text:
+              raise SystemExit('Expected bindWorkout anchor was not found; refusing unsafe patch.')
+          text = text.replace(needle, replacement, 1)
+
+          # Make the sound button explicitly test audio on enable.
+          old_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.07,.04)};renderSoundButton()}"
+          new_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.12,.06,'sine')}renderSoundButton()}"
+          if old_toggle not in text:
+              raise SystemExit('Expected toggleSound function was not found; refusing unsafe patch.')
+          text = text.replace(old_toggle, new_toggle, 1)
+
+          # Keep service worker registration cache-busting version current.
+          text = text.replace('sw.js?v=final3', 'sw.js?v=final13')
 
           index.write_text(text, encoding='utf-8')
 
-          # Put copies of the original PDF-derived images at the exact path
-          # expected by any older cached build too.
+          # Verify original PDF-derived image files at both supported paths.
           names = [
             'flexiones-de-pecho.jpg','sentadillas.jpg','remo-invertido.jpg',
             'fondos-en-silla.jpg','plancha.jpg','superman.jpg',
@@ -64,15 +96,23 @@ jobs:
           if missing:
               raise SystemExit('Missing expected image files: '+', '.join(missing))
 
-          # Static checks before commit.
+          # Static verification: old broken patch and old timer must be gone.
+          assert 'CALISTENIA AUDIO FIX V12' not in text
+          assert 'window.startTimer=function' not in text
+          assert 'window.startRest=function' not in text
+          assert old_timer not in text
+          assert old_rest not in text
+          assert "document.getElementById('soundToggle').onclick=()=>toggleSound()" in text
+          assert 'function startTimer(sec){ensureAudio()' in text
+          assert 'if(soundEnabled)finishSound()' in text
           assert './assets/exercises/' not in text
-          assert 'pdf-caption' not in text or '<style' in text
-          assert marker in text
           for n in names:
+              assert (root/n).exists() and (root/n).stat().st_size > 1000
               assert (asset_dir/n).exists() and (asset_dir/n).stat().st_size > 1000
           print('STATIC CHECKS PASSED')
-          print('Images:', ', '.join(names))
-          print('Audio patch present:', marker in text)
+          print('Audio patched at source: YES')
+          print('Dynamic sound button wired: YES')
+          print('Original exercise images verified:', len(names))
 
       - name: Commit verified fix
         shell: bash
@@ -84,5 +124,5 @@ jobs:
             echo 'No changes needed.'
             exit 0
           fi
-          git commit -m '[cal-app-fix] verified images and timer audio'
+          git commit -m '[cal-app-fix] verified timer audio source patch'
           git push
