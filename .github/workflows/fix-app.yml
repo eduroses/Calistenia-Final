@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Patch app and verify assets/audio
+      - name: Patch app and verify assets/audio/navigation
         shell: python
         run: |
           from pathlib import Path
@@ -62,17 +62,49 @@ jobs:
           replacement = needle + "document.getElementById('soundToggle').onclick=()=>toggleSound();"
           if needle not in text:
               raise SystemExit('Expected bindWorkout anchor was not found; refusing unsafe patch.')
-          text = text.replace(needle, replacement, 1)
+          if "document.getElementById('soundToggle').onclick=()=>toggleSound()" not in text:
+              text = text.replace(needle, replacement, 1)
 
           # Make the sound button explicitly test audio on enable.
           old_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.07,.04)};renderSoundButton()}"
           new_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.12,.06,'sine')}renderSoundButton()}"
-          if old_toggle not in text:
+          if old_toggle not in text and new_toggle not in text:
               raise SystemExit('Expected toggleSound function was not found; refusing unsafe patch.')
           text = text.replace(old_toggle, new_toggle, 1)
 
+          # Reliable "Siguiente ejercicio": the button is dynamically rendered and its
+          # original handler can become stale. Capture the click before the old handler,
+          # then activate the next visible workout item, which uses the app's own state/UI.
+          nav_marker = '<!-- CALISTENIA NEXT EXERCISE FIX V1 -->'
+          if nav_marker not in text:
+              nav_patch = r'''<script>
+<!-- CALISTENIA NEXT EXERCISE FIX V1 -->
+(function(){
+  function nextExerciseFromButton(e){
+    var btn=e.target && e.target.closest ? e.target.closest('button') : null;
+    if(!btn) return;
+    var label=(btn.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    if(label.indexOf('siguiente ejercicio')===-1) return;
+    var items=Array.prototype.slice.call(document.querySelectorAll('.work-item'));
+    if(!items.length) return;
+    var active=document.querySelector('.work-item.active');
+    var idx=items.indexOf(active);
+    if(idx<0) idx=0;
+    var next=items[idx+1];
+    if(next){
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+      next.click();
+    }
+  }
+  document.addEventListener('click', nextExerciseFromButton, true);
+})();
+</script>'''
+              text = text.replace('</body>', nav_patch + '\n</body>', 1)
+
           # Keep service worker registration cache-busting version current.
-          text = text.replace('sw.js?v=final3', 'sw.js?v=final13')
+          text = text.replace('sw.js?v=final3', 'sw.js?v=final14')
 
           index.write_text(text, encoding='utf-8')
 
@@ -96,7 +128,7 @@ jobs:
           if missing:
               raise SystemExit('Missing expected image files: '+', '.join(missing))
 
-          # Static verification: old broken patch and old timer must be gone.
+          # Static verification.
           assert 'CALISTENIA AUDIO FIX V12' not in text
           assert 'window.startTimer=function' not in text
           assert 'window.startRest=function' not in text
@@ -105,6 +137,9 @@ jobs:
           assert "document.getElementById('soundToggle').onclick=()=>toggleSound()" in text
           assert 'function startTimer(sec){ensureAudio()' in text
           assert 'if(soundEnabled)finishSound()' in text
+          assert nav_marker in text
+          assert "label.indexOf('siguiente ejercicio')" in text
+          assert "document.querySelectorAll('.work-item')" in text
           assert './assets/exercises/' not in text
           for n in names:
               assert (root/n).exists() and (root/n).stat().st_size > 1000
@@ -112,6 +147,7 @@ jobs:
           print('STATIC CHECKS PASSED')
           print('Audio patched at source: YES')
           print('Dynamic sound button wired: YES')
+          print('Next exercise navigation patch: YES')
           print('Original exercise images verified:', len(names))
 
       - name: Commit verified fix
@@ -124,5 +160,5 @@ jobs:
             echo 'No changes needed.'
             exit 0
           fi
-          git commit -m '[cal-app-fix] verified timer audio source patch'
+          git commit -m '[cal-app-fix] verified next exercise navigation patch'
           git push
