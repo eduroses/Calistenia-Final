@@ -2,7 +2,8 @@ name: Fix Calistenia app
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -15,69 +16,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Patch app and verify assets/audio/navigation
+      - name: Patch and verify next exercise navigation
         shell: python
         run: |
           from pathlib import Path
           import re
 
-          root = Path('.')
-          index = root / 'index.html'
+          index = Path('index.html')
           text = index.read_text(encoding='utf-8')
 
-          # Correct all image URLs to the repository root.
-          text = text.replace('./assets/exercises/', './')
-          text = text.replace('/assets/exercises/', '/')
-
-          # Remove the caption the user does not want.
-          text = re.sub(r'<div class="pdf-caption">.*?</div>', '', text, flags=re.S)
-
-          # Keep the original image quality.
-          text = text.replace(
-              '.pdf-visual img{height:auto;max-height:68vh;object-fit:contain}',
-              '.pdf-visual img{height:auto;max-height:78vh;object-fit:contain;image-rendering:auto}'
-          )
-
-          # Remove the previous broken audio patch completely. It used window.startTimer,
-          # which cannot replace the lexical startTimer used by bindWorkout().
-          text = re.sub(r'\\n?<!-- CALISTENIA AUDIO FIX V12 -->.*?</script>\\n?</body>', '\\n</body>', text, flags=re.S)
-          text = re.sub(r'<!-- CALISTENIA AUDIO FIX V12 -->.*?</script>\\s*</body>', '</body>', text, flags=re.S)
-
-          # Replace the real lexical timer function used by bindWorkout().
-          old_timer = r'''function startTimer(sec){timerLeft=Math.max(1,Math.round(sec));timerTotal=timerLeft;timerRunning=true;clearInterval(timer);timer=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft<=0){stopTimer();toast('¡Tiempo cumplido!');if(navigator.vibrate)navigator.vibrate([180,80,180])}},1000);updateTimerUI()}'''
-          new_timer = r'''function startTimer(sec){ensureAudio();timerLeft=Math.max(1,Math.round(sec));timerTotal=timerLeft;timerRunning=true;clearInterval(timer);beep(timerLeft<=3?1080:720,.06,.035,timerLeft<=3?'square':'sine');timer=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft>0&&soundEnabled){beep(timerLeft<=3?1080:720,timerLeft<=3?.10:.045,timerLeft<=3?.055:.028,timerLeft<=3?'square':'sine')}if(timerLeft<=0){clearInterval(timer);timer=null;timerRunning=false;if(soundEnabled)finishSound();if(navigator.vibrate)navigator.vibrate([180,80,180]);toast('¡Tiempo cumplido!');updateTimerUI()}},1000);updateTimerUI()}'''
-          if old_timer not in text:
-              raise SystemExit('Expected original startTimer function was not found; refusing unsafe patch.')
-          text = text.replace(old_timer, new_timer, 1)
-
-          # Replace the real lexical rest timer too.
-          old_rest = r'''function startRest(sec){restLeft=Math.max(1,Math.round(sec));restTotal=restLeft;showRest();clearInterval(restTimer);restTimer=setInterval(()=>{restLeft--;updateRestUI();if(restLeft<=0){clearInterval(restTimer);restTimer=null;toast('Descanso terminado · siguiente serie');if(navigator.vibrate)navigator.vibrate([180,80,180])}},1000);updateRestUI()}'''
-          new_rest = r'''function startRest(sec){ensureAudio();restLeft=Math.max(1,Math.round(sec));restTotal=restLeft;showRest();clearInterval(restTimer);beep(restLeft<=3?1080:600,.06,.03,restLeft<=3?'square':'sine');restTimer=setInterval(()=>{restLeft--;updateRestUI();if(restLeft>0&&soundEnabled){beep(restLeft<=3?1080:600,restLeft<=3?.10:.045,restLeft<=3?.055:.025,restLeft<=3?'square':'sine')}if(restLeft<=0){clearInterval(restTimer);restTimer=null;if(soundEnabled)finishSound();if(navigator.vibrate)navigator.vibrate([180,80,180]);toast('Descanso terminado · siguiente serie')}},1000);updateRestUI()}'''
-          if old_rest not in text:
-              raise SystemExit('Expected original startRest function was not found; refusing unsafe patch.')
-          text = text.replace(old_rest, new_rest, 1)
-
-          # Wire the dynamically-created sound button at the moment the workout UI exists.
-          needle = "document.getElementById('techBtn').onclick=()=>openExercise(ex[0]);"
-          replacement = needle + "document.getElementById('soundToggle').onclick=()=>toggleSound();"
-          if needle not in text:
-              raise SystemExit('Expected bindWorkout anchor was not found; refusing unsafe patch.')
-          if "document.getElementById('soundToggle').onclick=()=>toggleSound()" not in text:
-              text = text.replace(needle, replacement, 1)
-
-          # Make the sound button explicitly test audio on enable.
-          old_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.07,.04)};renderSoundButton()}"
-          new_toggle = "function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('cal_sound',soundEnabled?'on':'off');if(soundEnabled){ensureAudio();beep(660,.12,.06,'sine')}renderSoundButton()}"
-          if old_toggle not in text and new_toggle not in text:
-              raise SystemExit('Expected toggleSound function was not found; refusing unsafe patch.')
-          text = text.replace(old_toggle, new_toggle, 1)
-
-          # Reliable "Siguiente ejercicio": the button is dynamically rendered and its
-          # original handler can become stale. Capture the click before the old handler,
-          # then activate the next visible workout item, which uses the app's own state/UI.
-          nav_marker = '<!-- CALISTENIA NEXT EXERCISE FIX V1 -->'
-          if nav_marker not in text:
-              nav_patch = r'''<script>
+          marker = '<!-- CALISTENIA NEXT EXERCISE FIX V1 -->'
+          if marker not in text:
+              patch = r'''<script>
 <!-- CALISTENIA NEXT EXERCISE FIX V1 -->
 (function(){
   function nextExerciseFromButton(e){
@@ -101,64 +51,31 @@ jobs:
   document.addEventListener('click', nextExerciseFromButton, true);
 })();
 </script>'''
-              text = text.replace('</body>', nav_patch + '\n</body>', 1)
+              if '</body>' not in text:
+                  raise SystemExit('No </body> found; refusing unsafe patch.')
+              text = text.replace('</body>', patch + '\n</body>', 1)
 
-          # Keep service worker registration cache-busting version current.
-          text = text.replace('sw.js?v=final3', 'sw.js?v=final14')
-
+          # Refresh the service-worker query string so installed PWAs load the patched HTML.
+          text = re.sub(r'sw\.js\?v=final\d+', 'sw.js?v=final15', text)
           index.write_text(text, encoding='utf-8')
 
-          # Verify original PDF-derived image files at both supported paths.
-          names = [
-            'flexiones-de-pecho.jpg','sentadillas.jpg','remo-invertido.jpg',
-            'fondos-en-silla.jpg','plancha.jpg','superman.jpg',
-            'mountain-climbers.jpg','burpees.jpg','plancha-lateral.jpg',
-            'abdominal-bicicleta.jpg','referencia-general.jpg'
-          ]
-          asset_dir = root/'assets'/'exercises'
-          asset_dir.mkdir(parents=True, exist_ok=True)
-          missing=[]
-          for n in names:
-              src=root/n
-              dst=asset_dir/n
-              if src.exists():
-                  dst.write_bytes(src.read_bytes())
-              else:
-                  missing.append(n)
-          if missing:
-              raise SystemExit('Missing expected image files: '+', '.join(missing))
-
-          # Static verification.
-          assert 'CALISTENIA AUDIO FIX V12' not in text
-          assert 'window.startTimer=function' not in text
-          assert 'window.startRest=function' not in text
-          assert old_timer not in text
-          assert old_rest not in text
-          assert "document.getElementById('soundToggle').onclick=()=>toggleSound()" in text
-          assert 'function startTimer(sec){ensureAudio()' in text
-          assert 'if(soundEnabled)finishSound()' in text
-          assert nav_marker in text
-          assert "label.indexOf('siguiente ejercicio')" in text
+          # Static checks: the navigation patch must exist exactly once and target the real workout items.
+          assert text.count(marker) == 1
           assert "document.querySelectorAll('.work-item')" in text
-          assert './assets/exercises/' not in text
-          for n in names:
-              assert (root/n).exists() and (root/n).stat().st_size > 1000
-              assert (asset_dir/n).exists() and (asset_dir/n).stat().st_size > 1000
-          print('STATIC CHECKS PASSED')
-          print('Audio patched at source: YES')
-          print('Dynamic sound button wired: YES')
-          print('Next exercise navigation patch: YES')
-          print('Original exercise images verified:', len(names))
+          assert "label.indexOf('siguiente ejercicio')" in text
+          assert "document.addEventListener('click', nextExerciseFromButton, true)" in text
+          assert '</body>' in text
+          print('NEXT EXERCISE PATCH VERIFIED')
 
-      - name: Commit verified fix
+      - name: Commit verified navigation fix
         shell: bash
         run: |
           git config user.name 'calistenia-app-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html assets/exercises
+          git add index.html
           if git diff --cached --quiet; then
             echo 'No changes needed.'
             exit 0
           fi
-          git commit -m '[cal-app-fix] verified next exercise navigation patch'
+          git commit -m '[cal-app-fix] verified next exercise navigation'
           git push
