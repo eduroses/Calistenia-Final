@@ -17,57 +17,58 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Patch and verify next exercise navigation
-        shell: python
+        shell: bash
         run: |
+          set -euo pipefail
+          python3 <<'PY'
           from pathlib import Path
           import re
 
           index = Path('index.html')
           text = index.read_text(encoding='utf-8')
+          marker = '<!-- CALISTENIA NEXT EXERCISE FIX V2 -->'
 
-          marker = '<!-- CALISTENIA NEXT EXERCISE FIX V1 -->'
           if marker not in text:
-              patch = r'''<script>
-<!-- CALISTENIA NEXT EXERCISE FIX V1 -->
-(function(){
-  function nextExerciseFromButton(e){
-    var btn=e.target && e.target.closest ? e.target.closest('button') : null;
-    if(!btn) return;
-    var label=(btn.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
-    if(label.indexOf('siguiente ejercicio')===-1) return;
-    var items=Array.prototype.slice.call(document.querySelectorAll('.work-item'));
-    if(!items.length) return;
-    var active=document.querySelector('.work-item.active');
-    var idx=items.indexOf(active);
-    if(idx<0) idx=0;
-    var next=items[idx+1];
-    if(next){
-      e.preventDefault();
-      e.stopPropagation();
-      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-      next.click();
-    }
-  }
-  document.addEventListener('click', nextExerciseFromButton, true);
-})();
-</script>'''
+              patch = '''<script>
+          <!-- CALISTENIA NEXT EXERCISE FIX V2 -->
+          (function(){
+            'use strict';
+            function goNext(e){
+              var btn=e.target && e.target.closest ? e.target.closest('button') : null;
+              if(!btn) return;
+              var label=(btn.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
+              if(label.indexOf('siguiente ejercicio')===-1) return;
+              var items=Array.prototype.slice.call(document.querySelectorAll('.work-item'));
+              if(!items.length) return;
+              var active=document.querySelector('.work-item.active');
+              var idx=items.indexOf(active);
+              if(idx<0) return;
+              var next=items[idx+1];
+              if(!next) return;
+              e.preventDefault();
+              e.stopPropagation();
+              if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+              next.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+            }
+            document.addEventListener('click',goNext,true);
+          })();
+          </script>'''
               if '</body>' not in text:
                   raise SystemExit('No </body> found; refusing unsafe patch.')
               text = text.replace('</body>', patch + '\n</body>', 1)
 
-          # Refresh the service-worker query string so installed PWAs load the patched HTML.
-          text = re.sub(r'sw\.js\?v=final\d+', 'sw.js?v=final15', text)
+          text = re.sub(r'sw\\.js\\?v=final\\d+', 'sw.js?v=final16', text)
           index.write_text(text, encoding='utf-8')
 
-          # Static checks: the navigation patch must exist exactly once and target the real workout items.
           assert text.count(marker) == 1
           assert "document.querySelectorAll('.work-item')" in text
           assert "label.indexOf('siguiente ejercicio')" in text
-          assert "document.addEventListener('click', nextExerciseFromButton, true)" in text
+          assert "document.addEventListener('click',goNext,true)" in text
           assert '</body>' in text
-          print('NEXT EXERCISE PATCH VERIFIED')
+          print('NEXT EXERCISE FIX V2 VERIFIED')
+          PY
 
-      - name: Commit verified navigation fix
+      - name: Commit verified fix
         shell: bash
         run: |
           git config user.name 'calistenia-app-bot'
@@ -77,5 +78,5 @@ jobs:
             echo 'No changes needed.'
             exit 0
           fi
-          git commit -m '[cal-app-fix] verified next exercise navigation'
+          git commit -m '[cal-app-fix] verified next exercise navigation v2'
           git push
