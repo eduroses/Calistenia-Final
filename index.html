@@ -359,4 +359,28 @@ document.getElementById('weekSearch').oninput=renderWeeks;document.getElementByI
 </script>
 <script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final13").then(r=>r.update()).catch(()=>{})}</script>
 
+<script>
+<!-- CALISTENIA NEXT EXERCISE FIX V2 -->
+(function(){
+  'use strict';
+  function goNext(e){
+    var btn=e.target && e.target.closest ? e.target.closest('button') : null;
+    if(!btn) return;
+    var label=(btn.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    if(label.indexOf('siguiente ejercicio')===-1) return;
+    var items=Array.prototype.slice.call(document.querySelectorAll('.work-item'));
+    if(!items.length) return;
+    var active=document.querySelector('.work-item.active');
+    var idx=items.indexOf(active);
+    if(idx<0) return;
+    var next=items[idx+1];
+    if(!next) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.stopImmediatePropagation) e.stopImmediatePropagation();
+    next.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+  }
+  document.addEventListener('click',goNext,true);
+})();
+</script>
 </body></html>
