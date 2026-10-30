@@ -1,4 +1,4 @@
-const CACHE='calistenia-militar-final-v13';
+const CACHE='calistenia-militar-final-v14';
 const CORE=['./','./index.html','./manifest.webmanifest','./flexiones-de-pecho.jpg','./sentadillas.jpg','./remo-invertido.jpg','./fondos-en-silla.jpg','./plancha.jpg','./superman.jpg','./mountain-climbers.jpg','./burpees.jpg','./plancha-lateral.jpg','./abdominal-bicicleta.jpg','./referencia-general.jpg'];
 
 const PATCH = `<style id="cal-v12-style">.pdf-caption{display:none!important}.exercise-visual img{image-rendering:auto!important}</style><script id="cal-v12-patch">(()=>{
