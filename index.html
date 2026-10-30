@@ -215,6 +215,7 @@ const blankState=()=>({done:{},logs:[],history:{},metrics:{weekly:{},final:{}},n
 let S=loadState();
 let currentSession=null,currentStep=0,timer=null,timerLeft=0,timerTotal=0,timerRunning=false,calendarCursor=null;
 let audioCtx=null,soundEnabled=localStorage.getItem('cal_sound')!=='off';
+ repairHistoryDates();
 function ensureAudio(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){}}
 function beep(freq=700,dur=.055,vol=.035,type='sine'){if(!soundEnabled)return;ensureAudio();if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(0.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(vol,audioCtx.currentTime+.008);g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur+.01)}
 function finishSound(){if(!soundEnabled)return;beep(880,.12,.055,'sine');setTimeout(()=>beep(1175,.18,.055,'sine'),120)}
@@ -225,8 +226,9 @@ function loadState(){try{const raw=localStorage.getItem(KEY);if(raw){const x=JSO
 function save(){localStorage.setItem(KEY,JSON.stringify(S));renderAll();}
 function toast(t='Guardado'){const x=document.getElementById('toast');x.textContent=t;x.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>x.classList.remove('show'),1400)}
 function sessionId(w,d){return `w${w}d${d}`} 
- function localISODate(date=new Date()){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return y+'-'+m+'-'+d}
- function recordSessionHistory(id){const data=workoutData(id);if(!data)return;S.history=S.history||{};const date=localISODate();const entry={id:id,date:date,week:data.w,day:data.day[0],title:data.day[1],completedAt:new Date().toISOString(),exercises:data.exs.map((x,i)=>({name:x[0],target:x[1],sets:Object.entries(S.workout?.[id]?.sets||{}).filter(([k])=>k.startsWith(id+'-e'+i+'-s')).map(([,v])=>v.value||'completado')}))};S.history[date]=S.history[date]||[];S.history[date]=S.history[date].filter(x=>x.id!==id);S.history[date].push(entry)}
+ function localISODate(date=new Date()){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Montevideo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);const get=t=>parts.find(p=>p.type===t)?.value;return get('year')+'-'+get('month')+'-'+get('day')}
+ function repairHistoryDates(){S.history=S.history||{};const fixed={};for(const [storedDate,items] of Object.entries(S.history)){for(const item of (Array.isArray(items)?items:[])){const realDate=item.completedAt?localISODate(new Date(item.completedAt)):(item.date||storedDate);item.date=realDate;fixed[realDate]=fixed[realDate]||[];if(!fixed[realDate].some(x=>x.id===item.id&&x.completedAt===item.completedAt))fixed[realDate].push(item)}}S.history=fixed}
+function recordSessionHistory(id){const data=workoutData(id);if(!data)return;S.history=S.history||{};const date=localISODate();const entry={id:id,date:date,week:data.w,day:data.day[0],title:data.day[1],completedAt:new Date().toISOString(),exercises:data.exs.map((x,i)=>({name:x[0],target:x[1],sets:Object.entries(S.workout?.[id]?.sets||{}).filter(([k])=>k.startsWith(id+'-e'+i+'-s')).map(([,v])=>v.value||'completado')}))};S.history[date]=S.history[date]||[];S.history[date]=S.history[date].filter(x=>x.id!==id);S.history[date].push(entry)}
 function totalSessions(){return W.reduce((n,w)=>n+w.days.length,0)}
 function stats(){const done=Object.values(S.done||{}).filter(Boolean).length;const pct=Math.round(done/totalSessions()*100);const weeks=W.filter(w=>w.days.every((_,i)=>S.done?.[sessionId(w.id,i)])).length;return{done,pct,weeks}}
 function weekPct(w){const d=w.days.filter((_,i)=>S.done?.[sessionId(w.id,i)]).length;return Math.round(d/w.days.length*100)}
