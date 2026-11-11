@@ -367,7 +367,7 @@ function updateRestUI(){const c=document.getElementById('restClock');if(!c)retur
 function startTimer(sec){ensureAudio();timerLeft=Math.max(1,Math.round(sec));timerTotal=timerLeft;timerRunning=true;clearInterval(timer);beep(timerLeft<=3?1080:720,.06,.035,timerLeft<=3?'square':'sine');timer=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft>0&&soundEnabled){beep(timerLeft<=3?1080:720,timerLeft<=3?.10:.045,timerLeft<=3?.055:.028,timerLeft<=3?'square':'sine')}if(timerLeft<=0){clearInterval(timer);timer=null;timerRunning=false;if(soundEnabled)finishSound();if(navigator.vibrate)navigator.vibrate([180,80,180]);toast('¡Tiempo cumplido!');updateTimerUI()}},1000);updateTimerUI()}
 function stopTimer(){clearInterval(timer);timer=null;timerRunning=false}
 function adjustTimer(delta){timerLeft=Math.max(0,timerLeft+delta);timerTotal=Math.max(timerTotal,timerLeft);updateTimerUI()}
-function updateTimerUI(){const c=document.getElementById('timerClock');if(!c)return;c.textContent=formatTime(timerLeft);const p=timerTotal?Math.max(0,Math.min(100,(1-timerLeft/timerTotal)*100)):0;const pi=document.getElementById('timerProg');if(pi)pi.style.width=p+'%';const st=document.getElementById('timerState');if(st)st.textContent=timerRunning?'Temporizador en marcha…':timerLeft===0?'Tiempo cumplido.':'Listo para iniciar';const b=document.getElementById('timerBtn');if(b)b.textContent=timerRunning?'❚❚ Pausar':'▶ Iniciar'}
+function updateTimerUI(){const c=document.getElementById('timerClock');if(!c)return;c.textContent=formatTime(timerLeft);const p=timerTotal?Math.max(0,Math.min(1,timerLeft/timerTotal)):0;const ring=document.getElementById('timerRing');if(ring){const circumference=2*Math.PI*104;ring.style.strokeDasharray=String(circumference);ring.style.strokeDashoffset=String(circumference*(1-p));}const pi=document.getElementById('timerProg');if(pi)pi.style.width=((1-p)*100)+'%';const st=document.getElementById('timerState');if(st)st.textContent=timerRunning?'EN MARCHA':timerLeft===0?'TIEMPO CUMPLIDO':'LISTO PARA INICIAR';const b=document.getElementById('timerBtn');if(b)b.textContent=timerRunning?'Ⅱ PAUSAR':'▶ INICIAR';}
 function openSessionPicker(){const opts=W.flatMap(w=>w.days.map((d,i)=>({id:sessionId(w.id,i),label:`Semana ${w.id} · ${d[0]} · ${d[1]}`})));document.getElementById('modalKicker').textContent='Elegir sesión';document.getElementById('modalTitle').textContent='¿Qué querés entrenar?';document.getElementById('modalBody').innerHTML=`<div class="field"><label>Sesión</label><select id="sessionSelect">${opts.map(o=>`<option value="${o.id}">${esc(o.label)}</option>`).join('')}</select></div><button class="btn primary" id="pickSession">Abrir sesión</button>`;document.getElementById('modal').classList.add('open');document.getElementById('pickSession').onclick=()=>{const id=document.getElementById('sessionSelect').value;closeModal();startWorkout(id)}}
 function openLog(id){const [w,d]=id.match(/w(\d+)d(\d+)/).slice(1).map(Number),day=W[w-1].days[d],old=(S.logs||[]).find(x=>x.id===id)||{};document.getElementById('modalKicker').textContent=`Semana ${w} · ${day[0]}`;document.getElementById('modalTitle').textContent='Registrar sesión';document.getElementById('modalBody').innerHTML=`<div class="field"><label>Series y repeticiones (segundos solo en planchas y Superman)</label><input id="logDose" value="${esc(old.dose||'')}" placeholder="Ej. 4×12 · 60 s"></div><div class="two"><div class="field"><label>RPE (1–10)</label><input id="logRpe" type="number" min="1" max="10" value="${old.rpe||''}"></div><div class="field"><label>Recuperación (1–5)</label><input id="logRec" type="number" min="1" max="5" value="${old.rec||''}"></div></div><div class="field"><label>Notas</label><textarea id="logNote" rows="5">${esc(old.note||'')}</textarea></div><button class="btn primary" id="saveLog">Guardar registro</button>`;document.getElementById('modal').classList.add('open');document.getElementById('saveLog').onclick=()=>{const x={id,dose:document.getElementById('logDose').value,rpe:document.getElementById('logRpe').value,rec:document.getElementById('logRec').value,note:document.getElementById('logNote').value,date:new Date().toISOString()};S.logs=(S.logs||[]).filter(a=>a.id!==id);S.logs.unshift(x);save();closeModal();toast('Registro guardado')}}
 function aliasKey(name){const aliases={'Flexiones':'Flexiones de pecho','Fondos':'Fondos en silla','Plancha frontal':'Plancha','Plancha con extensión de brazo':'Plancha con toques de hombro','Plancha con toque de hombros':'Plancha con toques de hombro','Superman con retención':'Superman','Superman dinámico':'Superman dinámico','Mountain climbers rápidos':'Mountain climbers','Rodillas altas rápidas':'Rodillas altas','Rodillas altas explosivas':'Rodillas altas','Sentadillas profundas':'Sentadillas','Sentadillas profundas controladas':'Sentadillas','Zancadas caminando':'Zancadas alternas','Zancadas búlgaras':'Zancada búlgara','Zancada búlgara explosiva':'Zancada búlgara','Puente de glúteos a una pierna':'Puente de glúteos','Dominadas con pausa/asistidas':'Dominadas asistidas/negativas','Dominadas asistidas o negativas':'Dominadas asistidas/negativas','Dominadas asistidas/negativas con pausa':'Dominadas asistidas/negativas','Remo invertido explosivo':'Remo invertido','Remo invertido con pausa':'Remo invertido','Remo invertido seguro':'Remo invertido','Fondos en banco/silla':'Fondos en silla','Fondos con pausa':'Fondos en silla'};return E[name]?name:(aliases[name]||name)}
@@ -417,7 +417,7 @@ function renderAll(){renderHome();if(document.getElementById('semanas').classLis
 document.getElementById('soundToggle')?.addEventListener('click',toggleSound);renderSoundButton();
 document.getElementById('weekSearch').oninput=renderWeeks;document.getElementById('exerciseSearch').oninput=renderExercises;document.getElementById('chooseSessionBtn').onclick=openSessionPicker;document.getElementById('startDate').onchange=e=>{S.startDate=e.target.value;calendarCursor=new Date(e.target.value+'T12:00:00');save();toast('Fecha de inicio guardada')};document.getElementById('prevCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};document.getElementById('nextCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};document.getElementById('todayCal').onclick=()=>{calendarCursor=new Date();renderCalendar()};document.getElementById('saveMetrics').onclick=()=>{localStorage.setItem(KEY,JSON.stringify(S));renderProgress();toast('Progreso guardado')};document.getElementById('notesBox').value=S.notes||'';document.getElementById('saveNotes').onclick=()=>{S.notes=document.getElementById('notesBox').value;save();toast('Notas guardadas')};document.getElementById('exportBtn').onclick=downloadBackup;document.getElementById('installBtn').onclick=installApp;document.getElementById('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0])};document.getElementById('resetBtn').onclick=()=>{if(confirm('¿Borrar todo el progreso guardado en este dispositivo?')){localStorage.removeItem(KEY);localStorage.removeItem(LEGACY);location.reload()}};document.getElementById('closeModal').onclick=closeModal;document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});document.getElementById('notesBox').value=S.notes||'';nav();renderAll();
 </script>
-<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final21").then(r=>r.update()).catch(()=>{})}</script>
+<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final22").then(r=>r.update()).catch(()=>{})}</script>
 
 <script>
 <!-- CALISTENIA NEXT EXERCISE FIX V2 -->
@@ -451,6 +451,55 @@ const $=id=>document.getElementById(id);
 const exerciseInfoStyle=document.createElement('style');
 exerciseInfoStyle.textContent='.simple-exercise-info{border:0;background:none;color:inherit;font:inherit;font-weight:800;text-align:left;padding:0;cursor:pointer}.simple-exercise-info span{font-size:.72em;color:var(--accent);vertical-align:middle}.simple-see-demo{margin-top:8px;margin-bottom:14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.06em;padding:9px 13px;cursor:pointer}.simple-exercise-info:focus-visible,.simple-see-demo:focus-visible{outline:2px solid var(--accent);outline-offset:4px}';
 document.head.appendChild(exerciseInfoStyle);
+const premiumTimerStyle=document.createElement('style');
+premiumTimerStyle.textContent=`
+.simple-timer-premium{padding:22px 16px 18px;background:radial-gradient(circle at 50% 38%,#1c2b20 0,#101812 58%,#0c120e 100%);border:1px solid #35483a;box-shadow:inset 0 1px 0 #ffffff0b,0 18px 45px #0005}
+.timer-dial{width:min(68vw,270px);aspect-ratio:1;position:relative;margin:18px auto 20px;display:grid;place-items:center}
+.timer-dial svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.timer-dial circle{fill:none;stroke-width:9}
+.dial-track{stroke:#2b3b30}
+.dial-progress{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:653.45;stroke-dashoffset:0;filter:drop-shadow(0 0 7px #c9f36a55);transition:stroke-dashoffset .25s linear}
+.dial-center{position:relative;text-align:center}
+.dial-center .simple-clock{font-size:clamp(48px,13vw,70px);line-height:1;font-weight:950;letter-spacing:-.055em}
+.dial-caption{font-size:10px;letter-spacing:.16em;font-weight:900;color:#a5b2aa;margin-top:10px}
+.timer-controls{display:grid;grid-template-columns:65px 1fr 65px;gap:9px;align-items:center;max-width:420px;margin:0 auto}
+.timer-main{min-height:54px;border:0;border-radius:16px;background:var(--accent);color:#14200c;font-weight:1000;letter-spacing:.08em;font-size:14px;box-shadow:0 7px 22px #c9f36a22}
+.timer-adjust{height:48px;border:1px solid #3a4b3e;border-radius:14px;background:#1a271e;color:#eef5ed;font-size:13px;font-weight:850}
+.timer-reset,.timer-sound{display:block;margin:12px auto 0;border:0;background:transparent;color:#a5b2aa;font-size:11px;font-weight:850;letter-spacing:.1em;padding:8px 12px}
+.timer-sound{color:var(--accent);margin-top:2px}
+.simple-timer-premium .simple-kicker{text-align:center}
+.simple-exercise-help{position:fixed;inset:0;z-index:10000;background:#050806ed;display:flex;align-items:center;justify-content:center;padding:14px}
+.simple-exercise-help-panel{position:relative;width:min(760px,100%);max-height:92dvh;overflow:auto;background:#111a14;border:1px solid #405344;border-radius:22px;padding:20px;box-shadow:0 25px 90px #000b}
+.simple-exercise-help-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.simple-exercise-help-head h2{font-size:24px;line-height:1.1;margin:0}
+.simple-exercise-help-close{width:42px;height:42px;border:0;border-radius:12px;background:#26352b;color:#fff;font-size:25px}
+.simple-exercise-help-panel .exercise-visual{height:auto;max-height:42vh;display:flex;justify-content:center;background:#0b100d;border-radius:14px;overflow:hidden}
+.simple-exercise-help-panel .exercise-visual img{max-width:100%;max-height:42vh;object-fit:contain}
+.simple-exercise-help-panel .steps{padding:0}
+.simple-exercise-help-panel .steps div{grid-template-columns:28px 1fr}
+.simple-exercise-help-panel .notice{margin:12px 0}
+@media(max-width:520px){.simple-timer-premium{padding:18px 12px}.timer-dial{width:min(72vw,250px)}.timer-controls{grid-template-columns:58px 1fr 58px;gap:7px}.timer-main{font-size:12px}.simple-exercise-help-panel{padding:15px}.simple-exercise-help-panel .exercise-visual{max-height:35vh}.simple-exercise-help-panel .exercise-visual img{max-height:35vh}}
+`;
+document.head.appendChild(premiumTimerStyle);
+function showSimpleExerciseHelp(name){
+ const key=aliasKey(name),e=E[key];if(!e)return;
+ document.getElementById('simpleExerciseHelp')?.remove();
+ const layer=document.createElement('div');layer.id='simpleExerciseHelp';layer.className='simple-exercise-help';layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.setAttribute('aria-label','Técnica de '+name);
+ layer.innerHTML=`<div class="simple-exercise-help-panel"><div class="simple-exercise-help-head"><div><div class="simple-kicker">GUÍA DEL EJERCICIO</div><h2>${esc(name)}</h2></div><button type="button" class="simple-exercise-help-close" aria-label="Cerrar">×</button></div>${exerciseVisual(name)}<div class="muscles">${e.mus.split(' · ').map(x=>`<span class="tag">${esc(x)}</span>`).join('')}</div><p>${esc(e.desc)}</p><h3>Técnica paso a paso</h3><div class="steps">${e.steps.map(x=>`<div><span>${esc(x)}</span></div>`).join('')}</div><div class="notice"><b>Respiración:</b> ${esc(e.breath)}</div><h3>Errores comunes</h3><ul>${e.errors.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div class="two"><div><b>Más fácil</b><p>${esc(e.easy)}</p></div><div><b>Progresión</b><p>${esc(e.hard||'Progresá cuando la técnica y la recuperación sean sólidas.')}</p></div></div>${e.note?`<p class="notice">${esc(e.note)}</p>`:''}</div>`;
+ const close=()=>layer.remove();
+ layer.querySelector('.simple-exercise-help-close').onclick=close;
+ layer.addEventListener('click',ev=>{if(ev.target===layer)close()});
+ document.addEventListener('keydown',function escClose(ev){if(ev.key==='Escape'){close();document.removeEventListener('keydown',escClose)}});
+ document.body.appendChild(layer);
+ layer.querySelector('.simple-exercise-help-close').focus();
+}
+document.addEventListener('click',ev=>{
+ const trigger=ev.target.closest?.('#simpleExerciseInfo,#simpleSeeDemo');
+ if(!trigger)return;
+ ev.preventDefault();ev.stopPropagation();
+ const data=workoutData(currentSession);if(data)showSimpleExerciseHelp(data.exs[currentStep][0]);
+},true);
+
 function nextIncomplete(){for(let wi=0;wi<W.length;wi++)for(let di=0;di<W[wi].days.length;di++){const id=sessionId(wi+1,di);if(!S.done[id])return{w:wi+1,d:di,id}}return{w:1,d:0,id:sessionId(1,0)}}
 function buildHome(){
  const nx=nextIncomplete();
@@ -504,15 +553,19 @@ function renderSimpleWorkout(){
   <div class="simple-field"><label for="simpleActual">${timed?'SEGUNDOS REALIZADOS':'REPETICIONES REALIZADAS (OPCIONAL)'}</label><input id="simpleActual" type="number" min="0" inputmode="numeric" placeholder="${timed?parseSeconds(ex[1]):'Ej. '+(parseRange(ex[1])?.min||'')}"></div>
   <button class="simple-btn" id="simpleMark">${count===sets?'SERIES COMPLETADAS':'REGISTRAR SERIE'}</button>
  </div>
- <div class="simple-timer">
+ <div class="simple-timer simple-timer-premium">
   <div class="simple-kicker">${timed?'CRONÓMETRO DEL EJERCICIO':'DESCANSO ENTRE SERIES'}</div>
-  <div class="simple-clock" id="timerClock">${formatTime(timerLeft)}</div>
-  <div class="simple-muted" id="timerState">${timerRunning?'Temporizador en marcha':'Listo para iniciar'}</div>
-  <div class="simple-progress"><i id="timerProg" style="width:0%"></i></div>
-  <div class="actions">
-   <button class="btn primary" id="timerBtn">${timerRunning?'❚❚ Pausar':'▶ Iniciar'}</button>
-   <button class="btn" id="simpleTimerReset">↺ Reiniciar</button>
+  <div class="timer-dial" id="timerDial">
+   <svg viewBox="0 0 240 240" aria-hidden="true"><circle class="dial-track" cx="120" cy="120" r="104"></circle><circle class="dial-progress" id="timerRing" cx="120" cy="120" r="104"></circle></svg>
+   <div class="dial-center"><div class="simple-clock" id="timerClock">${formatTime(timerLeft)}</div><div class="dial-caption" id="timerState">${timerRunning?'EN MARCHA':'LISTO PARA INICIAR'}</div></div>
   </div>
+  <div class="timer-controls">
+   <button class="timer-adjust" id="simpleMinus" aria-label="Restar diez segundos">−10 s</button>
+   <button class="timer-main" id="timerBtn">${timerRunning?'Ⅱ':'▶'} ${timerRunning?'PAUSAR':'INICIAR'}</button>
+   <button class="timer-adjust" id="simplePlus" aria-label="Sumar diez segundos">+10 s</button>
+  </div>
+  <button class="timer-reset" id="simpleTimerReset">↺ REINICIAR</button>
+  <button class="timer-sound" id="simpleSoundToggle">${soundEnabled?'🔊 SONIDO ACTIVADO':'🔇 SONIDO DESACTIVADO'}</button>
  </div>
  <div class="simple-nav">
   <button class="simple-btn secondary" id="simplePrev" ${currentStep===0?'disabled':''}>← ANTERIOR</button>
@@ -535,6 +588,9 @@ function renderSimpleWorkout(){
  document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{stopTimer();currentStep=+b.dataset.ex;timerLeft=0;timerTotal=0;renderWorkout()});
  $('timerBtn').onclick=()=>{if(timerRunning){stopTimer();updateTimerUI()}else{if(!timerLeft)timerLeft=initial;startTimer(timerLeft)}};
  $('simpleTimerReset').onclick=()=>{stopTimer();timerLeft=initial;timerTotal=initial;updateTimerUI()};
+ $('simpleMinus').onclick=()=>{stopTimer();timerLeft=Math.max(0,timerLeft-10);timerTotal=Math.max(timerTotal,timerLeft);updateTimerUI()};
+ $('simplePlus').onclick=()=>{stopTimer();timerLeft+=10;timerTotal=Math.max(timerTotal,timerLeft);updateTimerUI()};
+ $('simpleSoundToggle').onclick=()=>{toggleSound();$('simpleSoundToggle').textContent=soundEnabled?'🔊 SONIDO ACTIVADO':'🔇 SONIDO DESACTIVADO'};
  $('simpleExit').onclick=()=>{stopTimer();currentSession=null;showView('inicio')};
  updateTimerUI();
 }
