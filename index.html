@@ -23,6 +23,62 @@
 @media(max-width:900px){.nav{display:flex!important;overflow-x:auto!important;overflow-y:hidden!important;flex:1;min-width:0;scrollbar-width:none;-webkit-overflow-scrolling:touch}.nav::-webkit-scrollbar{display:none}.nav button{flex:0 0 auto!important;min-width:74px!important}.sidebar{padding-left:8px!important;padding-right:8px!important}.main{padding-bottom:92px!important}.exercise-visual{height:auto}.modal-box{width:calc(100vw - 20px);padding:16px}}
 @media(max-width:520px){.nav button{min-width:68px!important;font-size:9px!important;padding:8px 7px!important}.exercise-visual{height:auto}.timer-clock{font-size:58px}.step-actions{display:grid;grid-template-columns:1fr 1fr}.step-actions .btn{min-height:46px}}
 </style>
+
+<style id="simple-coach-ui">
+:root{--bg:#0b100d;--panel:#151d18;--line:#2a3930;--accent:#c9f36a;--muted:#a5b2aa}
+body{background:#0b100d;color:#f5f8f5}
+.app{display:block!important;min-height:100vh}
+.sidebar,.topbar,.side-progress,.side-foot{display:none!important}
+.main{max-width:760px;margin:0 auto;padding:clamp(14px,3vw,28px) 14px 40px!important}
+.view{display:none!important}.view.active{display:block!important}
+#inicio.active{display:block!important}
+#entrenar.active{display:block!important}
+.simple-brand{display:flex;align-items:center;gap:12px;margin:4px 0 22px}
+.simple-mark{width:44px;height:44px;border-radius:14px;background:var(--accent);color:#14200c;display:grid;place-items:center;font-weight:1000;font-size:21px}
+.simple-brand h1{font-size:24px;line-height:1.1;margin:0}.simple-brand p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.simple-card{background:linear-gradient(145deg,#18221b,#111813);border:1px solid var(--line);border-radius:22px;padding:20px;margin:12px 0}
+.simple-kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:900}
+.simple-card h2{font-size:25px;line-height:1.15;margin:8px 0}
+.simple-muted{color:var(--muted);font-size:13px}
+.simple-field{display:grid;gap:7px;margin:16px 0}.simple-field label{font-size:12px;color:var(--muted);font-weight:700}
+.simple-field select,.simple-field input{width:100%;padding:14px;border-radius:13px;border:1px solid var(--line);background:#0c120e;color:#fff;font-size:16px}
+.simple-btn{border:0;border-radius:14px;background:var(--accent);color:#15200e;font-weight:900;padding:15px 18px;font-size:15px;width:100%;cursor:pointer}
+.simple-btn.secondary{background:#26352b;color:#f5f8f5;border:1px solid #3b4b40}
+.simple-session{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.simple-session strong{display:block;font-size:14px}.simple-session small{color:var(--muted)}
+.simple-pill{font-size:10px;color:var(--accent);border:1px solid #435335;border-radius:99px;padding:5px 8px;white-space:nowrap}
+.simple-progress{height:7px;background:#2a382e;border-radius:99px;overflow:hidden;margin:15px 0}
+.simple-progress i{height:100%;display:block;background:var(--accent)}
+.simple-exercise{background:#17211a;border:1px solid #344338;border-radius:20px;padding:20px;margin:14px 0}
+.simple-exercise h2{font-size:clamp(27px,6vw,38px);line-height:1.05;margin:8px 0}
+.simple-target{font-size:19px;color:var(--accent);font-weight:900;margin:10px 0}
+.simple-series{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}
+.simple-series button{border:1px solid var(--line);background:#0d1510;color:#eaf1eb;border-radius:12px;padding:13px 4px;font-weight:900}
+.simple-series button.done{background:#c9f36a;color:#15200e;border-color:#c9f36a}
+.simple-timer{background:#0d1510;border:1px solid var(--line);border-radius:18px;padding:16px;text-align:center;margin:14px 0}
+.simple-clock{font-size:clamp(48px,12vw,68px);font-weight:950;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.simple-timer .actions{justify-content:center;margin-top:10px}
+.simple-timer .actions button{flex:1;min-width:90px}
+.simple-nav{display:flex;gap:9px;margin-top:16px}.simple-nav button{flex:1}
+.simple-list{display:grid;gap:7px;margin-top:14px}
+.simple-list button{display:flex;justify-content:space-between;gap:10px;text-align:left;background:#101812;color:#f2f6f2;border:1px solid var(--line);border-radius:12px;padding:12px}
+.simple-list button.active{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent)}
+.simple-list button.done{opacity:.55}
+.simple-list small{color:var(--accent);white-space:nowrap}
+.simple-note{font-size:12px;color:var(--muted);margin-top:12px}
+#entrenar .workout-side,#entrenar .notice,#entrenar .step-actions #techBtn,#entrenar .step-actions #openLogNow{display:none!important}
+#entrenar .workout-shell,#entrenar .workout-main{display:block!important;min-height:0!important}
+#entrenar .workout-main{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+#entrenar .workout-top{display:block!important}
+#entrenar .workout-top .coach-pill{display:none}
+#entrenar .set-panel{display:none!important}
+#entrenar .step-actions{display:flex!important}
+#entrenar .step-actions .btn{flex:1}
+#entrenar .timer{display:none!important}
+#entrenar .rest-box{display:none!important}
+#entrenar .session-progress{margin:12px 0}
+@media(max-width:520px){.simple-card{padding:16px}.simple-series{grid-template-columns:repeat(3,1fr)}.simple-nav{position:sticky;bottom:8px;background:#0b100d;padding:8px 0}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -385,6 +441,106 @@ document.getElementById('weekSearch').oninput=renderWeeks;document.getElementByI
     next.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
   }
   document.addEventListener('click',goNext,true);
+})();
+</script>
+
+<script id="simple-coach-app">
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+function nextIncomplete(){for(let wi=0;wi<W.length;wi++)for(let di=0;di<W[wi].days.length;di++){const id=sessionId(wi+1,di);if(!S.done[id])return{w:wi+1,d:di,id}}return{w:1,d:0,id:sessionId(1,0)}}
+function buildHome(){
+ const nx=nextIncomplete();
+ $('inicio').innerHTML=`
+ <div class="simple-brand"><div class="simple-mark">C</div><div><h1>CALISTENIA</h1><p>Tu entrenamiento. Sin distracciones.</p></div></div>
+ <div class="simple-card">
+  <div class="simple-kicker">Plan de 8 semanas</div>
+  <h2>Entrená simple. Progresá constante.</h2>
+  <p class="simple-muted">Elegí tu semana y sesión. Seguí los ejercicios en orden, completá las series y usá el cronómetro para los tiempos y descansos.</p>
+  <div class="simple-field"><label for="simpleWeek">SEMANA</label><select id="simpleWeek">${W.map(w=>`<option value="${w.id}" ${w.id===nx.w?'selected':''}>Semana ${w.id} · ${esc(w.title)}</option>`).join('')}</select></div>
+  <div class="simple-field"><label for="simpleDay">ENTRENAMIENTO</label><select id="simpleDay"></select></div>
+  <button class="simple-btn" id="simpleStart">COMENZAR ENTRENAMIENTO →</button>
+  <p class="simple-note">Tu progreso anterior se conserva en este dispositivo.</p>
+ </div>
+ <div class="simple-card">
+  <div class="simple-kicker">Tu próxima sesión</div>
+  <div class="simple-session"><div><strong>Semana ${nx.w} · ${esc(W[nx.w-1].days[nx.d][1])}</strong><small>${esc(W[nx.w-1].days[nx.d][0])}</small></div><span class="simple-pill">SIGUIENTE</span></div>
+  <button class="simple-btn secondary" id="simpleContinue">CONTINUAR PLAN</button>
+ </div>
+ <div class="simple-muted" style="text-align:center;font-size:11px;padding:8px">Técnica correcta primero. Aumentá repeticiones solo cuando puedas mantener el control.</div>`;
+ const week=$('simpleWeek'),day=$('simpleDay');
+ function fillDays(){const w=W[+week.value-1];day.innerHTML=w.days.map((d,i)=>`<option value="${i}">${esc(d[0])} · ${esc(d[1])}${S.done[sessionId(w.id,i)]?' ✓':''}</option>`).join('');day.value=week.value===String(nx.w)?String(nx.d):'0'}
+ week.onchange=fillDays;fillDays();
+ $('simpleStart').onclick=()=>startWorkout(sessionId(+week.value,+day.value));
+ $('simpleContinue').onclick=()=>startWorkout(nx.id);
+}
+function targetInfo(dose){return String(dose||'').replace(/^(\d+)\s*[×x]\s*/,'').trim()}
+function isTimed(ex,dose){return /plancha|superman/i.test(ex)&&parseSeconds(dose)>0}
+function renderSimpleWorkout(){
+ const wrap=$('workoutView'),empty=$('workoutEmpty');
+ if(!currentSession){empty.style.display='block';empty.innerHTML='<div class="simple-card"><h2>Elegí tu entrenamiento</h2><button class="simple-btn" id="backChoose">VOLVER AL PLAN</button></div>';$('backChoose').onclick=()=>showView('inicio');wrap.style.display='none';return}
+ const data=workoutData(currentSession);if(!data){currentSession=null;renderSimpleWorkout();return}
+ const {w,d,day,exs}=data;empty.style.display='none';wrap.style.display='block';if(currentStep>=exs.length)currentStep=0;
+ const run=getWorkoutRun(),ex=exs[currentStep],sets=plannedSets(ex[1]),timed=isTimed(ex[0],ex[1]);
+ const count=Array.from({length:sets},(_,i)=>!!run.sets[setKey(currentStep,i+1)]).filter(Boolean).length;
+ const total=exs.reduce((n,x)=>n+plannedSets(x[1]),0);
+ const completed=exs.reduce((n,x,i)=>n+Array.from({length:plannedSets(x[1])},(_,j)=>!!run.sets[setKey(i,j+1)]).filter(Boolean).length,0);
+ const pct=Math.round(completed/Math.max(1,total)*100);
+ const initial=timed?parseSeconds(ex[1]):90;
+ timerLeft=timerLeft||initial;timerTotal=timerTotal||timerLeft;
+ wrap.innerHTML=`
+ <div class="simple-brand"><div class="simple-mark">C</div><div><h1>ENTRENAMIENTO</h1><p>Semana ${w} · ${esc(day[0])} · ${esc(day[1])}</p></div></div>
+ <div class="simple-progress"><i style="width:${pct}%"></i></div>
+ <div class="simple-muted">EJERCICIO ${currentStep+1} DE ${exs.length} · ${completed} DE ${total} SERIES COMPLETADAS</div>
+ <div class="simple-exercise">
+  <div class="simple-kicker">${timed?'TRABAJO POR TIEMPO':'TRABAJO POR REPETICIONES'}</div>
+  <h2>${esc(ex[0])}</h2>
+  <div class="simple-target">${esc(ex[1])}</div>
+  <p class="simple-muted">${timed?'Mantené la postura durante el tiempo indicado.':'Completá cada serie con movimiento controlado y buena técnica.'}</p>
+  <div class="simple-series">${Array.from({length:sets},(_,i)=>{const v=run.sets[setKey(currentStep,i+1)];return `<button class="${v?'done':''}" data-series="${i+1}">${v?'✓':'SERIE '+(i+1)}<br><small>${v?esc(v.value||'Hecha'):'Pendiente'}</small></button>`}).join('')}</div>
+  <div class="simple-field"><label for="simpleActual">${timed?'SEGUNDOS REALIZADOS':'REPETICIONES REALIZADAS (OPCIONAL)'}</label><input id="simpleActual" type="number" min="0" inputmode="numeric" placeholder="${timed?parseSeconds(ex[1]):'Ej. '+(parseRange(ex[1])?.min||'')}"></div>
+  <button class="simple-btn" id="simpleMark">${count===sets?'SERIES COMPLETADAS':'REGISTRAR SERIE'}</button>
+ </div>
+ <div class="simple-timer">
+  <div class="simple-kicker">${timed?'CRONÓMETRO DEL EJERCICIO':'DESCANSO ENTRE SERIES'}</div>
+  <div class="simple-clock" id="timerClock">${formatTime(timerLeft)}</div>
+  <div class="simple-muted" id="timerState">${timerRunning?'Temporizador en marcha':'Listo para iniciar'}</div>
+  <div class="simple-progress"><i id="timerProg" style="width:0%"></i></div>
+  <div class="actions">
+   <button class="btn primary" id="timerBtn">${timerRunning?'❚❚ Pausar':'▶ Iniciar'}</button>
+   <button class="btn" id="simpleTimerReset">↺ Reiniciar</button>
+  </div>
+ </div>
+ <div class="simple-nav">
+  <button class="simple-btn secondary" id="simplePrev" ${currentStep===0?'disabled':''}>← ANTERIOR</button>
+  <button class="simple-btn" id="simpleNext">${currentStep===exs.length-1?'FINALIZAR':'SIGUIENTE →'}</button>
+ </div>
+ <div class="simple-list"><div class="simple-kicker">EJERCICIOS DE ESTA SESIÓN</div>${exs.map((x,i)=>{const n=Array.from({length:plannedSets(x[1])},(_,j)=>!!run.sets[setKey(i,j+1)]).filter(Boolean).length;return `<button data-ex="${i}" class="${i===currentStep?'active':''} ${n===plannedSets(x[1])?'done':''}"><span>${i+1}. ${esc(x[0])}<br><small>${esc(x[1])}</small></span><small>${n}/${plannedSets(x[1])} series</small></button>`}).join('')}</div>
+ <p class="simple-note">Descansá 60–90 segundos entre series. Si perdés la técnica, detenete y recuperá antes de continuar.</p>
+ <button class="simple-btn secondary" id="simpleExit" style="margin-top:18px">VOLVER A MIS ENTRENAMIENTOS</button>`;
+ $('simpleMark').onclick=()=>{
+  const input=$('simpleActual'),value=input.value.trim()||targetInfo(ex[1]);
+  let n=1;for(let i=1;i<=sets;i++)if(!run.sets[setKey(currentStep,i)]){n=i;break}
+  run.sets[setKey(currentStep,n)]={value,date:new Date().toISOString()};S.workout[currentSession]=run;localStorage.setItem(KEY,JSON.stringify(S));
+  stopTimer();timerLeft=90;timerTotal=90;renderAll();if(n<sets){startRest(90);setTimeout(()=>{const c=$('timerClock'),st=$('timerState'),b=$('timerBtn');if(c){c.textContent=formatTime(restLeft);if(st)st.textContent='Descanso en marcha';if(b)b.textContent='❚❚ Pausar'}},0)}
+ };
+ document.querySelectorAll('[data-series]').forEach(b=>b.onclick=()=>{const n=+b.dataset.series,k=setKey(currentStep,n),v=run.sets[k];$('simpleActual').value=v?.value||''});
+ $('simplePrev').onclick=()=>{if(currentStep>0){stopTimer();currentStep--;timerLeft=0;timerTotal=0;renderWorkout()}};
+ $('simpleNext').onclick=()=>{if(currentStep<exs.length-1){stopTimer();currentStep++;timerLeft=0;timerTotal=0;renderWorkout()}else{S.done[currentSession]=true;recordSessionHistory(currentSession);localStorage.setItem(KEY,JSON.stringify(S));stopTimer();wrap.innerHTML='<div class="simple-card" style="text-align:center;padding:32px 20px"><div style="font-size:54px;color:var(--accent)">✓</div><div class="simple-kicker">SESIÓN COMPLETADA</div><h2>¡Buen trabajo!</h2><p class="simple-muted">Entrenamiento guardado. Recuperá bien y volvé cuando toque.</p><button class="simple-btn" id="simpleDone">VOLVER AL PLAN</button></div>';$('simpleDone').onclick=()=>{currentSession=null;showView('inicio')}}};
+ document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{stopTimer();currentStep=+b.dataset.ex;timerLeft=0;timerTotal=0;renderWorkout()});
+ $('timerBtn').onclick=()=>{if(timerRunning){stopTimer();updateTimerUI()}else{if(!timerLeft)timerLeft=initial;startTimer(timerLeft)}};
+ $('simpleTimerReset').onclick=()=>{stopTimer();timerLeft=initial;timerTotal=initial;updateTimerUI()};
+ $('simpleExit').onclick=()=>{stopTimer();currentSession=null;showView('inicio')};
+ updateTimerUI();
+}
+window.renderWorkout=renderSimpleWorkout;
+window.showView=function(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));if(id==='inicio')buildHome();if(id==='entrenar')renderSimpleWorkout();window.scrollTo({top:0,behavior:'instant'})};
+window.startWorkout=function(id){currentSession=id;currentStep=0;stopTimer();timerLeft=0;timerTotal=0;showView('entrenar')};
+window.renderHome=buildHome;
+window.renderAll=function(){buildHome();if(currentSession&&$('entrenar').classList.contains('active'))renderSimpleWorkout()};
+document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+$('inicio').classList.add('active');
+buildHome();
 })();
 </script>
 </body></html>
