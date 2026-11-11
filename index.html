@@ -417,7 +417,7 @@ function renderAll(){renderHome();if(document.getElementById('semanas').classLis
 document.getElementById('soundToggle')?.addEventListener('click',toggleSound);renderSoundButton();
 document.getElementById('weekSearch').oninput=renderWeeks;document.getElementById('exerciseSearch').oninput=renderExercises;document.getElementById('chooseSessionBtn').onclick=openSessionPicker;document.getElementById('startDate').onchange=e=>{S.startDate=e.target.value;calendarCursor=new Date(e.target.value+'T12:00:00');save();toast('Fecha de inicio guardada')};document.getElementById('prevCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};document.getElementById('nextCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};document.getElementById('todayCal').onclick=()=>{calendarCursor=new Date();renderCalendar()};document.getElementById('saveMetrics').onclick=()=>{localStorage.setItem(KEY,JSON.stringify(S));renderProgress();toast('Progreso guardado')};document.getElementById('notesBox').value=S.notes||'';document.getElementById('saveNotes').onclick=()=>{S.notes=document.getElementById('notesBox').value;save();toast('Notas guardadas')};document.getElementById('exportBtn').onclick=downloadBackup;document.getElementById('installBtn').onclick=installApp;document.getElementById('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0])};document.getElementById('resetBtn').onclick=()=>{if(confirm('¿Borrar todo el progreso guardado en este dispositivo?')){localStorage.removeItem(KEY);localStorage.removeItem(LEGACY);location.reload()}};document.getElementById('closeModal').onclick=closeModal;document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});document.getElementById('notesBox').value=S.notes||'';nav();renderAll();
 </script>
-<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final19").then(r=>r.update()).catch(()=>{})}</script>
+<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final20").then(r=>r.update()).catch(()=>{})}</script>
 
 <script>
 <!-- CALISTENIA NEXT EXERCISE FIX V2 -->
@@ -522,7 +522,7 @@ function renderSimpleWorkout(){
   const input=$('simpleActual'),value=input.value.trim()||targetInfo(ex[1]);
   let n=1;for(let i=1;i<=sets;i++)if(!run.sets[setKey(currentStep,i)]){n=i;break}
   run.sets[setKey(currentStep,n)]={value,date:new Date().toISOString()};S.workout[currentSession]=run;localStorage.setItem(KEY,JSON.stringify(S));
-  stopTimer();timerLeft=90;timerTotal=90;renderAll();if(n<sets){startRest(90);setTimeout(()=>{const c=$('timerClock'),st=$('timerState'),b=$('timerBtn');if(c){c.textContent=formatTime(restLeft);if(st)st.textContent='Descanso en marcha';if(b)b.textContent='❚❚ Pausar'}},0)}
+  stopTimer();timerLeft=90;timerTotal=90;renderAll();if(n<sets){startTimer(90)}
  };
  document.querySelectorAll('[data-series]').forEach(b=>b.onclick=()=>{const n=+b.dataset.series,k=setKey(currentStep,n),v=run.sets[k];$('simpleActual').value=v?.value||''});
  $('simplePrev').onclick=()=>{if(currentStep>0){stopTimer();currentStep--;timerLeft=0;timerTotal=0;renderWorkout()}};
