@@ -417,7 +417,7 @@ function renderAll(){renderHome();if(document.getElementById('semanas').classLis
 document.getElementById('soundToggle')?.addEventListener('click',toggleSound);renderSoundButton();
 document.getElementById('weekSearch').oninput=renderWeeks;document.getElementById('exerciseSearch').oninput=renderExercises;document.getElementById('chooseSessionBtn').onclick=openSessionPicker;document.getElementById('startDate').onchange=e=>{S.startDate=e.target.value;calendarCursor=new Date(e.target.value+'T12:00:00');save();toast('Fecha de inicio guardada')};document.getElementById('prevCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};document.getElementById('nextCal').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};document.getElementById('todayCal').onclick=()=>{calendarCursor=new Date();renderCalendar()};document.getElementById('saveMetrics').onclick=()=>{localStorage.setItem(KEY,JSON.stringify(S));renderProgress();toast('Progreso guardado')};document.getElementById('notesBox').value=S.notes||'';document.getElementById('saveNotes').onclick=()=>{S.notes=document.getElementById('notesBox').value;save();toast('Notas guardadas')};document.getElementById('exportBtn').onclick=downloadBackup;document.getElementById('installBtn').onclick=installApp;document.getElementById('importFile').onchange=e=>{if(e.target.files[0])importBackup(e.target.files[0])};document.getElementById('resetBtn').onclick=()=>{if(confirm('¿Borrar todo el progreso guardado en este dispositivo?')){localStorage.removeItem(KEY);localStorage.removeItem(LEGACY);location.reload()}};document.getElementById('closeModal').onclick=closeModal;document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});document.getElementById('notesBox').value=S.notes||'';nav();renderAll();
 </script>
-<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final20").then(r=>r.update()).catch(()=>{})}</script>
+<script>if("serviceWorker" in navigator && location.protocol!=="file:"){navigator.serviceWorker.register("sw.js?v=final21").then(r=>r.update()).catch(()=>{})}</script>
 
 <script>
 <!-- CALISTENIA NEXT EXERCISE FIX V2 -->
@@ -448,6 +448,9 @@ document.getElementById('weekSearch').oninput=renderWeeks;document.getElementByI
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id);
+const exerciseInfoStyle=document.createElement('style');
+exerciseInfoStyle.textContent='.simple-exercise-info{border:0;background:none;color:inherit;font:inherit;font-weight:800;text-align:left;padding:0;cursor:pointer}.simple-exercise-info span{font-size:.72em;color:var(--accent);vertical-align:middle}.simple-see-demo{margin-top:8px;margin-bottom:14px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.06em;padding:9px 13px;cursor:pointer}.simple-exercise-info:focus-visible,.simple-see-demo:focus-visible{outline:2px solid var(--accent);outline-offset:4px}';
+document.head.appendChild(exerciseInfoStyle);
 function nextIncomplete(){for(let wi=0;wi<W.length;wi++)for(let di=0;di<W[wi].days.length;di++){const id=sessionId(wi+1,di);if(!S.done[id])return{w:wi+1,d:di,id}}return{w:1,d:0,id:sessionId(1,0)}}
 function buildHome(){
  const nx=nextIncomplete();
@@ -494,7 +497,7 @@ function renderSimpleWorkout(){
  <div class="simple-muted">EJERCICIO ${currentStep+1} DE ${exs.length} · ${completed} DE ${total} SERIES COMPLETADAS</div>
  <div class="simple-exercise">
   <div class="simple-kicker">${timed?'TRABAJO POR TIEMPO':'TRABAJO POR REPETICIONES'}</div>
-  <h2>${esc(ex[0])}</h2>
+  <h2><button type="button" class="simple-exercise-info" id="simpleExerciseInfo">${esc(ex[0])} <span aria-hidden="true">ⓘ</span></button></h2><button type="button" class="simple-see-demo" id="simpleSeeDemo">VER IMAGEN Y CÓMO HACERLO</button>
   <div class="simple-target">${esc(ex[1])}</div>
   <p class="simple-muted">${timed?'Mantené la postura durante el tiempo indicado.':'Completá cada serie con movimiento controlado y buena técnica.'}</p>
   <div class="simple-series">${Array.from({length:sets},(_,i)=>{const v=run.sets[setKey(currentStep,i+1)];return `<button class="${v?'done':''}" data-series="${i+1}">${v?'✓':'SERIE '+(i+1)}<br><small>${v?esc(v.value||'Hecha'):'Pendiente'}</small></button>`}).join('')}</div>
@@ -518,6 +521,8 @@ function renderSimpleWorkout(){
  <div class="simple-list"><div class="simple-kicker">EJERCICIOS DE ESTA SESIÓN</div>${exs.map((x,i)=>{const n=Array.from({length:plannedSets(x[1])},(_,j)=>!!run.sets[setKey(i,j+1)]).filter(Boolean).length;return `<button data-ex="${i}" class="${i===currentStep?'active':''} ${n===plannedSets(x[1])?'done':''}"><span>${i+1}. ${esc(x[0])}<br><small>${esc(x[1])}</small></span><small>${n}/${plannedSets(x[1])} series</small></button>`}).join('')}</div>
  <p class="simple-note">Descansá 60–90 segundos entre series. Si perdés la técnica, detenete y recuperá antes de continuar.</p>
  <button class="simple-btn secondary" id="simpleExit" style="margin-top:18px">VOLVER A MIS ENTRENAMIENTOS</button>`;
+ $('simpleExerciseInfo').onclick=()=>openExercise(ex[0]);
+ $('simpleSeeDemo').onclick=()=>openExercise(ex[0]);
  $('simpleMark').onclick=()=>{
   const input=$('simpleActual'),value=input.value.trim()||targetInfo(ex[1]);
   let n=1;for(let i=1;i<=sets;i++)if(!run.sets[setKey(currentStep,i)]){n=i;break}
